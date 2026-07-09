@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ilon O'yini</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap');
+
+  :root {
+    --shell: #3a3a42;
+    --shell-light: #4a4a54;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #17171c;
+    background-image: radial-gradient(circle at 50% 0%, #232329 0%, #17171c 60%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'VT323', monospace;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+
+  .phone {
+    width: min(94vw, 380px);
+    background: linear-gradient(160deg, var(--shell-light), var(--shell) 60%);
+    border-radius: 28px;
+    padding: 18px 16px 26px;
+    box-shadow:
+      0 20px 40px rgba(0,0,0,0.5),
+      inset 0 1px 0 rgba(255,255,255,0.08),
+      inset 0 -2px 6px rgba(0,0,0,0.4);
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .brand {
+    text-align: center;
+    color: #8a8a92;
+    font-size: 13px;
+    letter-spacing: 3px;
+    font-family: 'Press Start 2P', monospace;
+  }
+
+  .gear-btn {
+    position: absolute;
+    right: 0;
+    background: linear-gradient(160deg, #55555f, #38383f);
+    border: none;
+    color: #cfcfd6;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 15px;
+    box-shadow: 0 2px 0 #222, inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .gear-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 #222; }
+
+  .screen-frame {
+    background: #0d1a0d;
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: inset 0 0 0 2px #000, inset 0 4px 12px rgba(0,0,0,0.6);
+  }
+
+  .screen-top {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    padding: 6px 8px;
+    border-radius: 2px 2px 0 0;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    image-rendering: pixelated;
+  }
+
+  .screen-bottom {
+    font-size: 15px;
+    text-align: center;
+    padding: 4px 0 6px;
+    border-radius: 0 0 2px 2px;
+    letter-spacing: 1px;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(3, 56px);
+    grid-template-rows: repeat(3, 56px);
+    gap: 8px;
+    justify-content: center;
+    margin-top: 18px;
+  }
+
+  .pad-btn {
+    background: linear-gradient(160deg, #55555f, #38383f);
+    border-radius: 12px;
+    box-shadow: 0 3px 0 #222, inset 0 1px 0 rgba(255,255,255,0.15);
+    color: #cfcfd6;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    touch-action: manipulation;
+  }
+  .pad-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #222;
+  }
+  .pad-up    { grid-column: 2; grid-row: 1; }
+  .pad-left  { grid-column: 1; grid-row: 2; }
+  .pad-ok    { grid-column: 2; grid-row: 2; font-size: 11px; font-family: 'Press Start 2P', monospace; }
+  .pad-right { grid-column: 3; grid-row: 2; }
+  .pad-down  { grid-column: 2; grid-row: 3; }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13,26,13,0.95);
+    color: #9bbc0f;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+    gap: 12px;
+    padding: 16px;
+    overflow-y: auto;
+  }
+  .overlay.show { display: flex; }
+  .overlay p { font-size: 12px; line-height: 1.8; margin: 0; }
+  .overlay .big { font-size: 16px; }
+  .overlay > button {
+    font-family: 'Press Start 2P', monospace;
+    background: #9bbc0f;
+    color: #0f380f;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+  }
+
+  .cycle-btn {
+    font-family: 'VT323', monospace;
+    background: #0f380f;
+    color: #9bbc0f;
+    border: 2px solid #9bbc0f;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 16px;
+    min-width: 90px;
+  }
+  .cycle-btn:active { transform: translateY(1px); }
+
+  .screen-wrap { position: relative; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="top-bar">
+    <div class="brand">S N A K E</div>
+    <button class="gear-btn" id="settingsBtn">⚙</button>
+  </div>
+  <div class="screen-frame">
+    <div class="screen-top" id="screenTop">
+      <span id="scoreLabel">SCORE 0</span>
+      <span id="bestLabel">BEST 0</span>
+    </div>
+    <div class="screen-wrap">
+      <canvas id="game" width="220" height="220"></canvas>
+
+      <div class="overlay" id="overlay">
+        <p class="big" id="overlayTitle">TAYYORMI?</p>
+        <p>D-PAD YOKI<br>SVAYP QILING</p>
+        <button id="overlayBtn">START</button>
+      </div>
+
+      <div class="overlay" id="settingsOverlay">
+        <p class="big">SOZLAMALAR</p>
+
+        <div class="setting-row">
+          <span>QIYINLIK</span>
+          <button class="cycle-btn" id="diffBtn">O'RTA</button>
+        </div>
+        <div class="setting-row">
+          <span>OVOZ</span>
+          <button class="cycle-btn" id="soundBtn">YONIQ</button>
+        </div>
+        <div class="setting-row">
+          <span>RANG</span>
+          <button class="cycle-btn" id="colorBtn">YASHIL</button>
+        </div>
+        <div class="setting-row">
+          <span>MAYDON</span>
+          <button class="cycle-btn" id="sizeBtn">O'RTA</button>
+        </div>
+
+        <button id="settingsSaveBtn">SAQLASH</button>
+      </div>
+    </div>
+    <div class="screen-bottom" id="screenBottom">NOKIA · 3310</div>
+  </div>
+
+  <div class="controls">
+    <button class="pad-btn pad-up" data-dir="up">▲</button>
+    <button class="pad-btn pad-left" data-dir="left">◀</button>
+    <button class="pad-btn pad-ok" id="okBtn">OK</button>
+    <button class="pad-btn pad-right" data-dir="right">▶</button>
+    <button class="pad-btn pad-down" data-dir="down">▼</button>
+  </div>
+</div>
+
+<script>
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  const scoreLabel = document.getElementById('scoreLabel');
+  const bestLabel = document.getElementById('bestLabel');
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayBtn = document.getElementById('overlayBtn');
+  const settingsOverlay = document.getElementById('settingsOverlay');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsSaveBtn = document.getElementById('settingsSaveBtn');
+  const diffBtn = document.getElementById('diffBtn');
+  const soundBtn = document.getElementById('soundBtn');
+  const colorBtn = document.getElementById('colorBtn');
+  const sizeBtn = document.getElementById('sizeBtn');
+  const screenTop = document.getElementById('screenTop');
+  const screenBottom = document.getElementById('screenBottom');
+
+  const DIFFICULTIES = {
+    "OSON":  { start: 200, dec: 3, min: 110 },
+    "O'RTA": { start: 160, dec: 4, min: 70 },
+    "QIYIN": { start: 110, dec: 6, min: 45 },
+  };
+  const DIFF_KEYS = Object.keys(DIFFICULTIES);
+
+  const THEMES = {
+    "YASHIL": { bg: "#9bbc0f", dark: "#8bac0f", fg: "#0f380f" },
+    "KO'K":   { bg: "#8fd3f4", dark: "#6fc0e6", fg: "#0b2e4a" },
+    "KULRANG":{ bg: "#cfcfcf", dark: "#b5b5b5", fg: "#1c1c1c" },
+    "AMBER":  { bg: "#f4b942", dark: "#dfa62d", fg: "#3a2100" },
+  };
+  const THEME_KEYS = Object.keys(THEMES);
+
+  const SIZES = { "KICHIK": 9, "O'RTA": 11, "KATTA": 15 };
+  const SIZE_KEYS = Object.keys(SIZES);
+
+  function loadSettings() {
+    let s = {};
+    try { s = JSON.parse(localStorage.getItem('snake_settings') || '{}'); } catch(e) {}
+    return {
+      diff: DIFF_KEYS.includes(s.diff) ? s.diff : "O'RTA",
+      sound: s.sound !== undefined ? s.sound : true,
+      theme: THEME_KEYS.includes(s.theme) ? s.theme : "YASHIL",
+      size: SIZE_KEYS.includes(s.size) ? s.size : "O'RTA",
+    };
+  }
+  function saveSettings() {
+    localStorage.setItem('snake_settings', JSON.stringify(settings));
+  }
+
+  let settings = loadSettings();
+
+  function refreshSettingsButtons() {
+    diffBtn.textContent = settings.diff;
+    soundBtn.textContent = settings.sound ? "YONIQ" : "O'CHIQ";
+    colorBtn.textContent = settings.theme;
+    sizeBtn.textContent = settings.size;
+  }
+  refreshSettingsButtons();
+
+  function cycle(keys, current) {
+    const i = keys.indexOf(current);
+    return keys[(i + 1) % keys.length];
+  }
+
+  diffBtn.addEventListener('click', () => { settings.diff = cycle(DIFF_KEYS, settings.diff); refreshSettingsButtons(); beep(440,0.05); });
+  soundBtn.addEventListener('click', () => { settings.sound = !settings.sound; refreshSettingsButtons(); beep(440,0.05); });
+  colorBtn.addEventListener('click', () => { settings.theme = cycle(THEME_KEYS, settings.theme); refreshSettingsButtons(); applyTheme(); beep(440,0.05); });
+  sizeBtn.addEventListener('click', () => { settings.size = cycle(SIZE_KEYS, settings.size); refreshSettingsButtons(); beep(440,0.05); });
+
+  settingsBtn.addEventListener('click', () => {
+    if (running) { clearTimeout(loopId); running = false; }
+    overlay.classList.remove('show');
+    settingsOverlay.classList.add('show');
+  });
+
+  settingsSaveBtn.addEventListener('click', () => {
+    saveSettings();
+    settingsOverlay.classList.remove('show');
+    GRID = SIZES[settings.size];
+    CELL = canvas.width / GRID;
+    applyTheme();
+    reset();
+    draw();
+    overlayTitle.textContent = "TAYYORMI?";
+    overlayBtn.textContent = "START";
+    overlay.classList.add('show');
+    beep(660,0.08);
+  });
+
+  function applyTheme() {
+    const t = THEMES[settings.theme];
+    screenTop.style.background = t.bg;
+    screenTop.style.color = t.fg;
+    screenBottom.style.background = t.bg;
+    screenBottom.style.color = t.fg;
+  }
+
+  let audioCtx = null;
+  function beep(freq, dur) {
+    if (!settings.sound) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      gain.gain.value = 0.06;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+      osc.stop(audioCtx.currentTime + dur);
+    } catch(e) {}
+  }
+
+  let GRID = SIZES[settings.size];
+  let CELL = canvas.width / GRID;
+
+  let snake, dir, nextDir, food, score, best, running, tickMs, loopId, diffCfg;
+
+  best = parseInt(localStorage?.getItem?.('snake_best') || '0') || 0;
+  bestLabel.textContent = 'BEST ' + best;
+
+  function reset() {
+    const mid = Math.floor(GRID/2);
+    snake = [{x:mid,y:mid},{x:mid-1,y:mid},{x:mid-2,y:mid}];
+    dir = {x:1,y:0};
+    nextDir = {x:1,y:0};
+    score = 0;
+    diffCfg = DIFFICULTIES[settings.diff];
+    tickMs = diffCfg.start;
+    placeFood();
+    scoreLabel.textContent = 'SCORE 0';
+    running = false;
+  }
+
+  function placeFood() {
+    let ok = false;
+    while (!ok) {
+      food = { x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID) };
+      ok = !snake.some(s => s.x === food.x && s.y === food.y);
+    }
+  }
+
+  function draw() {
+    const t = THEMES[settings.theme];
+    ctx.fillStyle = t.bg;
+    ctx.fillRect(0,0,canvas.width, canvas.height);
+
+    ctx.fillStyle = t.dark;
+    for (let i=0;i<GRID;i++){
+      for(let j=(i%2);j<GRID;j+=2){
+        ctx.fillRect(i*CELL, j*CELL, CELL, CELL);
+      }
+    }
+
+    ctx.fillStyle = t.fg;
+    snake.forEach((s) => {
+      ctx.fillRect(s.x*CELL+1, s.y*CELL+1, CELL-2, CELL-2);
+    });
+
+    ctx.fillRect(food.x*CELL+3, food.y*CELL+3, CELL-6, CELL-6);
+  }
+
+  function tick() {
+    dir = nextDir;
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+    if (head.x < 0 || head.y < 0 || head.x >= GRID || head.y >= GRID ||
+        snake.some(s => s.x === head.x && s.y === head.y)) {
+      return gameOver();
+    }
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      scoreLabel.textContent = 'SCORE ' + score;
+      placeFood();
+      beep(880, 0.06);
+      if (tickMs > diffCfg.min) tickMs -= diffCfg.dec;
+    } else {
+      snake.pop();
+    }
+
+    draw();
+    loopId = setTimeout(tick, tickMs);
+  }
+
+  function gameOver() {
+    running = false;
+    draw();
+    beep(150, 0.3);
+    if (score > best) {
+      best = score;
+      bestLabel.textContent = 'BEST ' + best;
+      try { localStorage.setItem('snake_best', best); } catch(e) {}
+    }
+    overlayTitle.textContent = "O'YIN TUGADI";
+    overlayBtn.textContent = "QAYTA BOSHLASH";
+    overlay.classList.add('show');
+
+    if (tg) {
+      try { tg.sendData(JSON.stringify({ game: 'snake', score })); } catch(e) {}
+    }
+  }
+
+  function start() {
+    reset();
+    draw();
+    overlay.classList.remove('show');
+    running = true;
+    loopId = setTimeout(tick, tickMs);
+  }
+
+  overlayBtn.addEventListener('click', start);
+
+  function setDir(d) {
+    if (!running) return;
+    const map = {
+      up:    {x:0,y:-1},
+      down:  {x:0,y:1},
+      left:  {x:-1,y:0},
+      right: {x:1,y:0},
+    };
+    const nd = map[d];
+    if (nd.x === -dir.x && nd.y === -dir.y) return;
+    nextDir = nd;
+  }
+
+  document.querySelectorAll('.pad-btn[data-dir]').forEach(btn => {
+    btn.addEventListener('click', () => setDir(btn.dataset.dir));
+  });
+  document.getElementById('okBtn').addEventListener('click', () => {
+    if (!running) start();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right' };
+    if (map[e.key]) setDir(map[e.key]);
+  });
+
+  let touchStart = null;
+  canvas.addEventListener('touchstart', (e) => {
+    touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  });
+  canvas.addEventListener('touchend', (e) => {
+    if (!touchStart) return;
+    const dx = e.changedTouches[0].clientX - touchStart.x;
+    const dy = e.changedTouches[0].clientY - touchStart.y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      setDir(dx > 0 ? 'right' : 'left');
+    } else {
+      setDir(dy > 0 ? 'down' : 'up');
+    }
+    touchStart = null;
+  });
+
+  applyTheme();
+  reset();
+  draw();
+  overlayTitle.textContent = "TAYYORMI?";
+</script>
+</body>
+</html>
